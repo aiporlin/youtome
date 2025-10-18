@@ -1,0 +1,34 @@
+{
+  "name": "cloudflare-drop",
+  "version": "1.0.0",
+  "description": "基于Cloudflare的安全文件快传工具，支持端到端加密和P2P传输",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx http-server -o",
+    "build": "echo \"构建完成\"",
+    "deploy": "wrangler pages deploy ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/username/cloudflare-drop.git"
+  },
+  "keywords": [
+    "cloudflare",
+    "file-transfer",
+    "end-to-end-encryption",
+    "p2p",
+    "webrtc",
+    "secure-sharing"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "wrangler": "^3.0.0"
+  },
+  "dependencies": {
+    "tailwindcss": "^3.3.3",
+    "font-awesome": "^4.7.0",
+    "sweetalert2": "^11.7.20"
+  }
+}

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cloudflare Drop - 安全文件快传工具</title>
+  <link rel="stylesheet" href="src/css/style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+  <!-- 导航栏 -->
+  <nav class="bg-blue-600 text-white shadow-md">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <i class="fa fa-cloud-upload text-2xl"></i>
+        <h1 class="text-xl font-bold">Cloudflare Drop</h1>
+      </div>
+      <div class="hidden md:flex space-x-4">
+        <button id="fileTransferBtn" class="py-2 px-4 rounded hover:bg-blue-700 transition">
+          <i class="fa fa-file-o mr-1"></i>文件传输
+        </button>
+        <button id="textTransferBtn" class="py-2 px-4 rounded hover:bg-blue-700 transition">
+          <i class="fa fa-text-height mr-1"></i>文字传输
+        </button>
+        <button id="helpBtn" class="py-2 px-4 rounded hover:bg-blue-700 transition">
+          <i class="fa fa-question-circle mr-1"></i>帮助
+        </button>
+      </div>
+      <div class="md:hidden">
+        <button id="mobileMenuBtn" class="text-xl">
+          <i class="fa fa-bars"></i>
+        </button>
+      </div>
+    </div>
+    <!-- 移动端菜单 -->
+    <div id="mobileMenu" class="hidden md:hidden bg-blue-700">
+      <div class="container mx-auto px-4 py-2 flex flex-col space-y-2">
+        <button id="mobileFileTransferBtn" class="py-2 px-4 text-left hover:bg-blue-800 rounded">
+          <i class="fa fa-file-o mr-2"></i>文件传输
+        </button>
+        <button id="mobileTextTransferBtn" class="py-2 px-4 text-left hover:bg-blue-800 rounded">
+          <i class="fa fa-text-height mr-2"></i>文字传输
+        </button>
+        <button id="mobileHelpBtn" class="py-2 px-4 text-left hover:bg-blue-800 rounded">
+          <i class="fa fa-question-circle mr-2"></i>帮助
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 主内容区 -->
+  <main class="flex-grow container mx-auto px-4 py-6">
+    <!-- 文件传输面板 -->
+    <section id="fileTransferPanel" class="mb-8 bg-white rounded-lg shadow-lg p-6">
+      <h2 class="text-2xl font-bold mb-4 text-gray-800 flex items-center">
+        <i class="fa fa-file-o text-blue-600 mr-2"></i>文件快传
+      </h2>
+      <div class="mb-4">
+        <div id="dropZone" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-500 transition-colors">
+          <i class="fa fa-cloud-upload text-5xl text-gray-400 mb-4"></i>
+          <p class="text-gray-600 mb-2">拖拽文件到此处，或</p>
+          <button id="browseFilesBtn" class="bg-blue-600 text-white py-2 px-6 rounded hover:bg-blue-700 transition">
+            <i class="fa fa-folder-open mr-2"></i>浏览文件
+          </button>
+          <input type="file" id="fileInput" class="hidden" multiple>
+        </div>
+      </div>
+      
+      <div id="fileList" class="mb-4 hidden">
+        <h3 class="text-lg font-semibold mb-2 text-gray-700">已选择文件</h3>
+        <div id="selectedFiles" class="space-y-2 max-h-60 overflow-y-auto"></div>
+      </div>
+      
+      <div class="flex justify-between items-center">
+        <div class="flex items-center space-x-4">
+          <div class="flex items-center">
+            <input type="checkbox" id="encryptFiles" class="mr-2" checked>
+            <label for="encryptFiles" class="text-gray-700">端到端加密</label>
+          </div>
+          <div class="flex items-center">
+            <input type="checkbox" id="useP2P" class="mr-2" checked>
+            <label for="useP2P" class="text-gray-700">使用P2P传输</label>
+          </div>
+        </div>
+        <button id="generateFileLinkBtn" class="bg-green-600 text-white py-2 px-6 rounded hover:bg-green-700 transition hidden">
+          <i class="fa fa-link mr-2"></i>生成链接
+        </button>
+      </div>
+      
+      <!-- 输入链接区域 -->
+      <div class="mt-6">
+        <h3 class="text-lg font-semibold mb-2 text-gray-700">接收文件</h3>
+        <div class="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0">
+          <input type="text" id="receiveFileLink" class="flex-grow py-2 px-3 border border-gray-300 rounded w-full sm:w-auto sm:flex-grow mr-0 sm:mr-3" placeholder="粘贴分享链接...">
+          <button id="processLinkBtn" class="bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700 transition whitespace-nowrap">
+            <i class="fa fa-download mr-1"></i>获取文件
+          </button>
+        </div>
+        <!-- 传送码输入区域 -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 mt-3">
+          <input type="text" id="receivePasscode" class="flex-grow py-2 px-3 border border-gray-300 rounded w-full sm:w-auto sm:flex-grow mr-0 sm:mr-3" placeholder="输入5位数字传送码..." maxlength="5">
+          <button id="processPasscodeBtn" class="bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700 transition whitespace-nowrap">
+            <i class="fa fa-key mr-1"></i>使用传送码
+          </button>
+        </div>
+      </div>
+      
+      <div id="fileLinkContainer" class="mt-6 p-4 bg-gray-50 rounded-lg hidden">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0">
+          <input type="text" id="fileShareLink" class="flex-grow py-2 px-3 border border-gray-300 rounded w-full sm:w-auto sm:flex-grow mr-0 sm:mr-3" readonly>
+          <button id="copyFileLinkBtn" class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition whitespace-nowrap">
+            <i class="fa fa-copy mr-1"></i>复制链接
+          </button>
+          <button id="downloadFileBtn" class="bg-purple-600 text-white py-2 px-4 rounded hover:bg-purple-700 transition whitespace-nowrap">
+            <i class="fa fa-download mr-1"></i>下载文件
+          </button>
+        </div>
+        <!-- 传送码区域 -->
+        <div class="mt-3">
+          <div class="flex items-center">
+            <span class="text-gray-700 mr-2">传送码：</span>
+            <div id="filePasscode" class="font-mono text-xl font-bold text-blue-600 px-3 py-1 bg-blue-50 rounded border border-blue-200">----</div>
+            <button id="copyPasscodeBtn" class="ml-2 text-gray-600 hover:text-blue-600 transition">
+              <i class="fa fa-copy"></i>
+            </button>
+          </div>
+          <div class="mt-1 text-sm text-gray-500">
+            <i class="fa fa-clock-o mr-1"></i>
+            <span id="filePasscodeExpiry">传送码将在5分钟后过期</span>
+          </div>
+        </div>
+      </div>
+      
+      <div id="transferProgress" class="mt-6 hidden">
+        <div class="flex justify-between text-sm text-gray-600 mb-1">
+          <span id="transferFileName">文件传输中...</span>
+          <span id="transferProgressPercent">0%</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+          <div id="progressBar" class="bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 文字传输面板 -->
+    <section id="textTransferPanel" class="mb-8 bg-white rounded-lg shadow-lg p-6 hidden">
+      <h2 class="text-2xl font-bold mb-4 text-gray-800 flex items-center">
+        <i class="fa fa-text-height text-blue-600 mr-2"></i>文字快传
+      </h2>
+      <div class="mb-4">
+        <textarea id="textContent" class="w-full p-3 border border-gray-300 rounded-lg h-40 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="请输入要分享的文字内容..."></textarea>
+      </div>
+      
+      <div class="flex justify-between items-center">
+        <div class="flex items-center space-x-4">
+          <div class="flex items-center">
+            <input type="checkbox" id="encryptText" class="mr-2" checked>
+            <label for="encryptText" class="text-gray-700">端到端加密</label>
+          </div>
+        </div>
+        <button id="generateTextLinkBtn" class="bg-green-600 text-white py-2 px-6 rounded hover:bg-green-700 transition">
+          <i class="fa fa-link mr-2"></i>生成链接
+        </button>
+      </div>
+      
+      <div id="textLinkContainer" class="mt-6 p-4 bg-gray-50 rounded-lg hidden">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0">
+          <input type="text" id="textShareLink" class="flex-grow py-2 px-3 border border-gray-300 rounded w-full sm:w-auto sm:flex-grow mr-0 sm:mr-3" readonly>
+          <button id="copyTextLinkBtn" class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition whitespace-nowrap">
+            <i class="fa fa-copy mr-1"></i>复制链接
+          </button>
+        </div>
+        <!-- 传送码区域 -->
+        <div class="mt-3">
+          <div class="flex items-center">
+            <span class="text-gray-700 mr-2">传送码：</span>
+            <div id="textPasscode" class="font-mono text-xl font-bold text-blue-600 px-3 py-1 bg-blue-50 rounded border border-blue-200">----</div>
+            <button id="copyTextPasscodeBtn" class="ml-2 text-gray-600 hover:text-blue-600 transition">
+              <i class="fa fa-copy"></i>
+            </button>
+          </div>
+          <div class="mt-1 text-sm text-gray-500">
+            <i class="fa fa-clock-o mr-1"></i>
+            <span id="textPasscodeExpiry">传送码将在5分钟后过期</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 帮助面板 -->
+    <section id="helpPanel" class="mb-8 bg-white rounded-lg shadow-lg p-6 hidden">
+      <h2 class="text-2xl font-bold mb-4 text-gray-800 flex items-center">
+        <i class="fa fa-question-circle text-blue-600 mr-2"></i>使用帮助
+      </h2>
+      
+      <div class="space-y-6">
+        <div>
+          <h3 class="text-lg font-semibold mb-2 text-blue-600">什么是Cloudflare Drop？</h3>
+          <p class="text-gray-700">Cloudflare Drop是一个安全、快速的文件和文字传输工具，支持端到端加密和P2P点对点传输，保护您的数据安全。</p>
+        </div>
+        
+        <div>
+          <h3 class="text-lg font-semibold mb-2 text-blue-600">文件传输</h3>
+          <ul class="list-disc list-inside text-gray-700 space-y-2">
+            <li>点击"文件传输"选项卡</li>
+            <li>拖拽文件到上传区域或点击"浏览文件"选择文件</li>
+            <li>可以选择启用端到端加密和P2P传输</li>
+            <li>点击"生成链接"创建分享链接</li>
+            <li>复制链接并分享给接收者</li>
+          </ul>
+        </div>
+        
+        <div>
+          <h3 class="text-lg font-semibold mb-2 text-blue-600">文字传输</h3>
+          <ul class="list-disc list-inside text-gray-700 space-y-2">
+            <li>点击"文字传输"选项卡</li>
+            <li>在文本框中输入要分享的内容</li>
+            <li>可以选择启用端到端加密</li>
+            <li>点击"生成链接"创建分享链接</li>
+            <li>复制链接并分享给接收者</li>
+          </ul>
+        </div>
+        
+        <div>
+          <h3 class="text-lg font-semibold mb-2 text-blue-600">关于安全性</h3>
+          <p class="text-gray-700">我们的服务确保：</p>
+          <ul class="list-disc list-inside text-gray-700 space-y-2">
+            <li>端到端加密：数据在发送前加密，只有接收者可以解密</li>
+            <li>P2P传输：直接在浏览器间传输数据，不经过服务器</li>
+            <li>临时存储：服务器不会长期存储您的文件或数据</li>
+            <li>链接过期：生成的链接在24小时后自动失效</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 页脚 -->
+  <footer class="bg-gray-800 text-white py-6">
+    <div class="container mx-auto px-4">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="mb-4 md:mb-0">
+          <div class="flex items-center space-x-2">
+            <i class="fa fa-cloud-upload text-xl"></i>
+            <span class="text-lg font-bold">Cloudflare Drop</span>
+          </div>
+          <p class="text-gray-400 text-sm mt-1">安全、快速的文件传输解决方案</p>
+        </div>
+        <div class="flex space-x-6">
+          <a href="#" class="hover:text-blue-400 transition">
+            <i class="fa fa-github text-2xl"></i>
+          </a>
+          <a href="#" class="hover:text-blue-400 transition">
+            <i class="fa fa-twitter text-2xl"></i>
+          </a>
+          <a href="#" class="hover:text-blue-400 transition">
+            <i class="fa fa-envelope text-2xl"></i>
+          </a>
+        </div>
+      </div>
+      <div class="border-t border-gray-700 mt-6 pt-6 text-center text-gray-400 text-sm">
+        <p>© 2023 Cloudflare Drop. 保留所有权利。</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- 提示信息 -->
+  <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 text-white py-2 px-4 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition duration-300 flex items-center">
+    <i id="toastIcon" class="fa fa-info-circle mr-2"></i>
+    <span id="toastMessage"></span>
+  </div>
+
+  <script src="src/js/app.js"></script>
+</body>
+</html>
